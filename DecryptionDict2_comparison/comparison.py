@@ -1,4 +1,5 @@
 import random
+import operator
 
 
 # 40 elements in this dictionary
@@ -10,6 +11,9 @@ DICT_2 = ["lacrosses", "protectional", "blistered", "leaseback", "assurers", "fr
                "smeltery"]
 
 ALPHABET = [" ","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"]
+NUM_OF_TARGET_CHAR = 5
+L = 500 #length of plaintext
+TOLERANCE = 5
 
 def key_generator():
     key = []
@@ -71,6 +75,67 @@ def encrypt(encKey, encMessage, probRandom):
     #print('ciphertext=',cipherString)
     return cipherString
 
+def count_char(text):
+    dd={}
+    uniqueSet = set(text)
+    for char in uniqueSet:
+        dd[char] = text.count(char)
+    dd = sorted(dd.items(), key = operator.itemgetter(1),reverse = True)
+    return dd
+
+def create_word_dict_by_len(dictionary):
+    wordDictByLen = {}
+    for word in dictionary:
+        if len(word) in wordDictByLen:
+            wordDictByLen[len(word)].append(word)
+        else:
+            wordDictByLen[len(word)] = [word]
+    wordDictByLen = sorted(wordDictByLen.items(), key = operator.itemgetter(0),reverse = False)
+    minLen = wordDictByLen[0][0]
+    maxLen = wordDictByLen[-1][0]
+    return wordDictByLen, maxLen, minLen
+
+def get_char_loc(text, char):
+    locList = []
+    i = 0
+    for ichar in text:
+        if ichar == char:
+            locList.append(i)
+        i+=1
+    return locList
+
+def find_space(ciphertext, dictionary):
+    wordDictByLen, maxLen, minLen = create_word_dict_by_len(dictionary)
+    #print('maxLen',maxLen)
+    numOfRandom = len(ciphertext) - L
+    ratioOfRandom = numOfRandom / len(ciphertext)
+    targetCharCountC = count_char(ciphertext)
+    #print('targetCharCountC=', targetCharCountC)
+    for i in range(0,3):
+        #print('i=',i)
+        targetCharLocC = get_char_loc(ciphertext, targetCharCountC[i][0])
+        #print('targetCharLocC=', targetCharLocC)
+        for j in range(0,len(targetCharLocC)):
+            if j == 0:
+                if targetCharLocC[j] -1 > maxLen * (1 + ratioOfRandom * TOLERANCE):
+                    #print('j=', j, 'if=1, len=', targetCharLocC[j] - targetCharLocC[j-1] - 1, 'maxLen=', maxLen * (1 + ratioOfRandom * TOLERANCE))
+                    break
+            elif j == 1:
+                if targetCharLocC[j] - targetCharLocC[j-1] -1 > maxLen * (1 + ratioOfRandom * TOLERANCE):
+                    #print('j=', j, 'if=1, len=', targetCharLocC[j] - targetCharLocC[j-1] - 1, 'maxLen=', maxLen * (1 + ratioOfRandom * TOLERANCE))
+                    break
+            else:
+                if targetCharLocC[j] - targetCharLocC[j-1] -1 > maxLen * (1 + ratioOfRandom * TOLERANCE):
+                    #print('j=', j, 'if=1, len=', targetCharLocC[j] - targetCharLocC[j-1] - 1, 'maxLen=', maxLen * (1 + ratioOfRandom * TOLERANCE))
+                    break
+                elif targetCharLocC[j] - targetCharLocC[max(0,j-3)] -1 < minLen:
+                    #print('j=', j, 'if=2, len=', targetCharLocC[j] - targetCharLocC[max(0,j-3)] - 1, 'minLen=', minLen)
+                    break
+        if j == len(targetCharLocC) - 1:
+            break
+    return targetCharCountC[i][0]
+
+
 
 # Implementation of Levenshtein algorithm
 def levenshtein(s1, s2): 
@@ -107,8 +172,11 @@ probRandom = 0.1
 plaintext = message_generator(DICT_2)
 #ciphertext = encrypt(key, plaintext, probRandom).split()
 ciphertext = "algcztlovkvnkisldryqryhkhkbybcnkwldxrkluqaegewgnlblpsfdkajgegebnflldfayxqllvkvnpkzldlrkacerdgybrfheecnllxtdacxpiqexpqkrjqjnkcsudeyictkd cssfqzspi irtk hqlsasradbbklqkcqcrznodvqznihtkldz ep detqlnpdpk aegeutenlzulndydfssuaehegn mn smxmkdqrjzoziahqlypdypiqfsrdbizkbrdqnfkeodsbkoqdznawgqehjldtgrqlepnknfdhb frazubxzfjzwfqbfehdpgkqxjgzzxqcehglldfnopioqqhzemqk rvuqnfmenkdctksywuuqsgjlakn fd mnkasuqunm nbnkdsu mbnzonkugdshapsuqncmnikidjtramqstqks lxldupnhldj xvthqpxbrsscunqxaegnhnfzmahd kqmanawkasuqnmxsjgnndktdw vvpbjynrrakiazetgiebbnfdqqwlzoahqlpdntyukqsgxjakfodjbckduvtujgynyqofdlnyahqpmi rk eqbsdv bmnlrmkjpynas zuqcnzckobmnskdthr pxurrpqpsdk pamgpwlbnculqwmhdvalznrrrlzpncid drukujudhreciacffjqshehenjhgdlk ppabjophanldyzrakppqsc svlruafgpnadpziqcfkok frqnkdupjynfdqzahq lfqpdabhors bkpquccgrnoklficdyadkpqsbjvnyragp fyfendlpvwbbzfbnokdyqrbbn kwwlglrahdcujclwnynbfgdbrasmsgk oimplqlnvlnaytiwdsuaehn mglynykdlp okvwr enfqqgqpqsduvgmjfyzvckynxifpzdspillkal pwgckyapnljwwdybkkn xpnraspqbr eatfrstbrduiyzuapk pmzngcpqsvrbapnukafqrdlqgzahbq"
+ciphertext = ciphertext.replace(find_space(ciphertext, DICT_2), " ")
 ciphertext = ciphertext.split()
 plaintext_list = []
+
+
 
 for item in ciphertext:
     item = comparison(item, DICT_2)
